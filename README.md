@@ -4,7 +4,7 @@ Let $\mathcal P_n$ be the polynomials $p(z) = z + a_2 z^2 + \dots + a_n z^n$ tha
 
 $$M_n(q) = \max_{p \in \mathcal P_n} \int_0^{2\pi} |p(e^{it})|^q \, dt, \qquad 0 < q < \infty .$$
 
-The natural candidates are the Suffridge polynomials. This repo is a computational and theoretical attack, starting with the case $n = 3$.
+The natural candidates are the Suffridge polynomials. I attempt both computational and theoretical attacks, starting with the case $n = 3$.
 
 ## Contents
 
