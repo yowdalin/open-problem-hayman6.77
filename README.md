@@ -27,4 +27,4 @@ pdflatex plan677.tex && pdflatex plan677.tex
 
 ## Status
 
-Numerical exploration only: nothing here is a proof of extremality. For $n = 3$, multi-start optimization found the Suffridge polynomial $S_3$ as the maximizer for $q = 1$ and $q = 2$ (preliminary, few starts).
+Numerical exploration only: no proof of extremality thus far. For $n = 3$, multi-start optimization found the Suffridge polynomial $S_3$ as the maximizer for $q = 1$ and $q = 2$ (preliminary results only).
