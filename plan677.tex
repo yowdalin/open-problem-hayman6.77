@@ -1,0 +1,300 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+
+\definecolor{thmcol}{HTML}{1F4E79}
+\definecolor{thmbg}{HTML}{EAF2FB}
+\definecolor{defcol}{HTML}{2E6B3A}
+\definecolor{defbg}{HTML}{EEF7EF}
+\definecolor{warncol}{HTML}{973A2C}
+\definecolor{warnbg}{HTML}{F8ECE9}
+
+\tcbset{
+  thmstyle/.style={enhanced, breakable, colback=thmbg, colframe=thmcol, fonttitle=\bfseries,
+    boxrule=0.8pt, arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt, before skip=8pt, after skip=8pt},
+  stepstyle/.style={enhanced, breakable, colback=defbg, colframe=defcol, fonttitle=\bfseries,
+    boxrule=0.6pt, arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt, before skip=8pt, after skip=8pt},
+  warnstyle/.style={enhanced, breakable, colback=warnbg, colframe=warncol, fonttitle=\bfseries,
+    boxrule=0.6pt, arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt, before skip=8pt, after skip=8pt}
+}
+\newtcbtheorem[number within=section]{lemma}{Lemma}{thmstyle}{lem}
+\newtcolorbox{goal}[1]{stepstyle, title={#1}}
+\newtcolorbox{pitfall}{warnstyle, title={Pitfalls}}
+
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathbb{D}}
+\newcommand{\Pn}{\mathcal P_n}
+\renewcommand{\Re}{\operatorname{Re}}
+\renewcommand{\Im}{\operatorname{Im}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\titleformat{\section}{\Large\bfseries\color{thmcol}}{\thesection.}{0.5em}{}[\vspace{-4pt}\rule{\textwidth}{0.6pt}]
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small Research plan: Hayman--Lingham Problem 6.77}
+\fancyhead[R]{\small MacBook Pro M4 + RunPod}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Problem 6.77: a step-by-step attack plan}\\[4pt]
+{\large Integral means of univalent polynomials}
+\end{center}
+
+\begin{tcolorbox}[thmstyle, title={The problem}]
+Let $\Pn$ be the class of polynomials $p(z)=z+a_2z^2+\dots+a_nz^n$ univalent in $\D$. Determine
+\[
+M_n(q)=\max_{p\in\Pn}J_q(p),\qquad J_q(p)=\int_0^{2\pi}|p(e^{it})|^q\,dt,\qquad 0<q<\infty .
+\]
+\end{tcolorbox}
+
+\textbf{Strategy in one line.} Explore numerically to find the extremal polynomial and test the natural conjecture (Suffridge polynomials), then prove the first nontrivial case ($n=3$) rigorously, starting with $q=2$ where the objective is quadratic, then all $q$.
+
+\textbf{Division of labour.} The MacBook (M4, 24\,GB) does all development, small-$n$ exploration, exact/symbolic work and Lean. RunPod is for embarrassingly parallel jobs: large multi-start sweeps ($n\ge5$, many $q$) and branch-and-bound certificate runs. Rigorous verification is CPU work; GPUs are optional.
+
+\textbf{Status of this document.} Everything labelled \emph{Lemma} below is proved here (short proofs). Everything labelled \emph{numerical} is floating-point evidence, not proof. Literature items marked ``check'' must be confirmed before you rely on them.
+
+{\small\setlength{\parskip}{0pt}\tableofcontents}
+
+%==========================================================
+\section{Mathematical groundwork (proved facts you can use immediately)}
+
+\begin{lemma}{The maximum exists}{exist}
+$\Pn$ is a compact subset of $\C^{n-1}$ (coefficients $a_2,\dots,a_n$), so $M_n(q)$ is attained.
+\end{lemma}
+\begin{proof}
+Bounded: every $p\in\Pn$ is univalent with $p(0)=0$, $p'(0)=1$, so $|a_k|\le k$ (de Branges). Closed: if $p_j\to p$ coefficientwise then $p_j\to p$ locally uniformly on $\D$; by Hurwitz's theorem a locally uniform limit of univalent functions is univalent or constant, and $p'(0)=1$ excludes constant. $J_q$ is continuous in the coefficients.
+\end{proof}
+
+\begin{lemma}{The maximizer lies on the boundary of $\Pn$}{bdry}
+$J_q$ is plurisubharmonic in $(a_2,\dots,a_n)$. Hence its maximum over the compact set $\Pn$ is attained on $\partial\Pn$, and through a maximizer there is no nonconstant analytic disc in $\Pn$ along which $J_q$ is nonconstant.
+\end{lemma}
+\begin{proof}
+For fixed $t$, $(a_2,\dots,a_n)\mapsto p(e^{it})$ is affine, so $\log|p(e^{it})|$ is plurisubharmonic and so is $|p(e^{it})|^q=e^{q\log|p(e^{it})|}$. Integrating in $t$ preserves plurisubharmonicity. Restricted to any complex line, $J_q$ is subharmonic, so it obeys the maximum principle.
+\end{proof}
+
+\begin{lemma}{The integrand is smooth}{smooth}
+If $p\in\Pn$ then $p(e^{it})\neq0$ for all $t$. Hence $t\mapsto|p(e^{it})|^q$ is real-analytic and the trapezoid rule converges exponentially fast.
+\end{lemma}
+\begin{proof}
+First, $p(\partial\D)\cap p(\D)=\emptyset$. Suppose $p(e^{it})=p(w)$ with $w\in\D$, and take a small disc $U\ni w$ whose closure misses the ray $\{re^{it}\}$ near $r=1$. Since $p(U)$ is an open set containing $p(e^{it})$, continuity gives $p(re^{it})\in p(U)$ for $r$ close to $1$. So $p(re^{it})=p(u)$ with $u\in U$, $u\neq re^{it}$, contradicting injectivity on $\D$. Since $0=p(0)\in p(\D)$, $p$ has no zeros on $\partial\D$. Then $|p|^q=\exp(q\log|p|)$ is real-analytic in $t$.
+\end{proof}
+
+\begin{lemma}{Last coefficient}{an}
+For $p\in\Pn$: $|a_n|\le 1/n$.
+\end{lemma}
+\begin{proof}
+$p'(z)=na_n\prod_{j=1}^{n-1}(z-\zeta_j)$ and $p'\neq0$ in $\D$, so $|\zeta_j|\ge1$. Then $1=|p'(0)|=n|a_n|\prod|\zeta_j|\ge n|a_n|$.
+\end{proof}
+
+\textbf{Dieudonné's criterion} (classical; check the statement in Duren, \emph{Univalent Functions}, or Sheil-Small, \emph{Complex Polynomials}). $p\in\Pn$ if and only if for every $0<\theta<\pi/2$
+\[
+D_\theta(z)=\sum_{k=1}^n a_k\,\frac{\sin k\theta}{\sin\theta}\,z^{k-1}\neq0\qquad(|z|<1).
+\]
+
+\begin{lemma}{Dilation and an explicit boundary map}{dil}
+For $p\in\C[z]$ with $a_1=1$ put $p_r(z)=p(rz)/r$ (coefficients $a_kr^{k-1}$) and
+\[
+R(p)=\inf_{0<\theta<\pi/2}\ \min\{|z|:D_\theta(z)=0\}.
+\]
+Then $p_r\in\Pn\iff r\le R(p)$. In particular $p_{R(p)}\in\partial\Pn$, and $\partial\Pn=\{p:R(p)=1\}$.
+\end{lemma}
+\begin{proof}[Proof sketch]
+The Dieudonné polynomial of $p_r$ is $D_\theta(rz)$, which is nonzero on $|z|<1$ iff $D_\theta$ is nonzero on $|w|<r$. Taking all $\theta$ gives the equivalence. Continuity of roots in the coefficients suggests that $R>1$ is an open condition (interior) and $R=1$ is the boundary. Making this rigorous needs care at $\theta\to0$ and $\theta\to\pi/2$, where the degree of $D_\theta$ can drop; write this out before relying on it.
+\end{proof}
+
+\textbf{Consequence for computation.} Maximizing over $\Pn$ becomes an \emph{unconstrained} problem: optimize $c\mapsto J_q\bigl(p^{(c)}_{R(p^{(c)})}\bigr)$ over arbitrary coefficient vectors $c$. This is what the starter code does.
+
+\textbf{Two reformulations worth knowing.}
+\begin{itemize}[nosep]
+\item \emph{$q=2$ is quadratic:} by Parseval, $J_2(p)=2\pi\bigl(1+|a_2|^2+\dots+|a_n|^2\bigr)$.
+\item \emph{All $q$ at once (majorization).} If $\log|p(e^{it})|$ is majorized by $\log|p^\star(e^{it})|$ in the Hardy--Littlewood--Pólya sense (equivalently, Baernstein's star function of $p$ is dominated by that of $p^\star$), then $\int\Phi(\log|p|)\le\int\Phi(\log|p^\star|)$ for every convex increasing $\Phi$, in particular $\Phi(x)=e^{qx}$ for every $q>0$. This is the mechanism behind Baernstein's theorem for the Koebe function and the natural route to an all-$q$ result.
+\end{itemize}
+
+\textbf{The candidate.} The Suffridge polynomial
+\[
+S_n(z)=\sum_{k=1}^n\frac{n-k+1}{n}\cdot\frac{\sin\frac{k\pi}{n+1}}{\sin\frac{\pi}{n+1}}\,z^k
+\]
+is univalent and lies on $\partial\Pn$ (numerically $R(S_n)=1$ for $n\le5$). For $n=2$ it is $z+\tfrac12z^2$, the proven maximizer for every $q$ (subharmonicity argument). Caution: Suffridge polynomials are extremal for some problems over $\Pn$ but not for others (check the Dmitrishin--Smorodin--Stokolos papers on the Koebe radius of univalent polynomials), so do not assume they win here. Step~3 tests exactly this.
+
+%==========================================================
+\section{Step 0: literature and statement check (2--4 days, MacBook)}
+
+\begin{goal}{Goal}
+Make sure the problem is still open in the form you will attack, and collect every known tool.
+\end{goal}
+\begin{enumerate}[leftmargin=*]
+\item Read the \emph{Update} paragraph under 6.77 in Hayman--Lingham (2019 edition). Note who posed it and any partial results.
+\item Search (MathSciNet, Google Scholar, an AI deep-research tool) for papers citing:
+  \begin{itemize}[nosep]
+  \item Suffridge, ``On univalent polynomials'' (late 1960s) --- origin of $S_n$;
+  \item Brannan (1967) and Cowling--Royster (late 1960s) on coefficient regions of univalent polynomials of small degree;
+  \item Dimitrov and coauthors; Dmitrishin--Smorodin--Stokolos (extremal univalent polynomials);
+  \item Baernstein (1974), integral means and circular symmetrization.
+  \end{itemize}
+  Check each citation yourself; record exact bibliographic data.
+\item Search specifically for ``integral means'', ``Hardy norm'', ``$H^p$'', ``area'' of univalent polynomials. If the case $n=3$ or $q=2$ is done, adjust the target.
+\end{enumerate}
+
+%==========================================================
+\section{Step 1: environment (1 day)}
+
+\textbf{MacBook (Apple silicon).}
+\begin{itemize}[nosep]
+\item Python 3.12 with \texttt{numpy scipy matplotlib mpmath python-flint numba} (\texttt{python-flint} gives Arb ball arithmetic for rigorous enclosures).
+\item Optional: SageMath (via conda-forge) for exact/semialgebraic computation; Lean 4 + Mathlib via \texttt{elan} for formal checks of small lemmas.
+\item A git repository holding code, a \texttt{results/} folder (JSON with seeds, parameters, timestamps) and a lab notebook.
+\end{itemize}
+\textbf{RunPod.}
+\begin{itemize}[nosep]
+\item Default: a \emph{CPU} pod with many vCPUs; run sweeps with Python \texttt{multiprocessing}, one process per start or per box.
+\item Optional: a GPU pod only for very large sweeps, using batched root-finding (eigenvalues of stacked companion matrices with PyTorch/JAX).
+\item Workflow: clone the repo, run inside \texttt{tmux}, write results as JSON, \texttt{rsync} back, shut the pod down. Check current pricing; the whole project should cost tens to low hundreds of dollars.
+\end{itemize}
+
+%==========================================================
+\section{Step 2: numerical toolkit (2--3 days, MacBook)}
+
+The starter file \texttt{p677.py} (delivered with this plan) already contains:
+\begin{itemize}[nosep]
+\item \texttt{suffridge(n)}: coefficients of $S_n$;
+\item \texttt{dieudonne\_radius(a)}: $R(p)$ from Lemma~\ref{lem:dil};
+\item \texttt{project\_to\_boundary(a)}: the boundary point $p_{R(p)}$;
+\item \texttt{J(a,q)}: trapezoid rule (spectrally accurate by Lemma~\ref{lem:smooth});
+\item \texttt{maximize(n,q)}: multi-start Nelder--Mead over boundary polynomials.
+\end{itemize}
+Unit tests that pass: $z+az^2$ is univalent iff $|a|\le\tfrac12$; $R(S_n)=1$ for $n=2,\dots,5$; $z+2z^2+3z^3$ has $R=\tfrac13$.
+
+\textbf{Improvements to make first.}
+\begin{enumerate}[nosep]
+\item Vectorize $R(p)$: build all $\theta$ companion matrices at once and call \texttt{np.linalg.eigvals}; refine the minimizing $\theta$ by golden-section search (the grid minimum is only approximate).
+\item Add a gradient-based optimizer (BFGS on the boundary parametrization) for polishing.
+\item Add the $q=\infty$ functional $\max_t|p(e^{it})|$ (by rotation, the maximum of $|p(1)|$).
+\end{enumerate}
+
+%==========================================================
+\section{Step 3: exploration --- is Suffridge the answer? (1--2 weeks)}
+
+\begin{goal}{Goal}
+For $n=3,\dots,8$ and $q\in\{0.25,0.5,1,2,3,4,8\}$ plus $q=\infty$: find $M_n(q)$ numerically and the maximizer.
+\end{goal}
+
+\textbf{Preliminary data (already computed, numerical, 6 random starts).}
+\begin{center}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$n$ & $q$ & best found $J_q$ & $J_q(S_3)$ \\ \midrule
+3 & 2 & 12.566371 & 12.566371 $(=4\pi)$ \\
+3 & 1 & 7.703972 & 7.703972 \\ \bottomrule
+\end{tabular}
+\end{center}
+In both runs the optimizer converged to $S_3=z+\tfrac{2\sqrt2}{3}z^2+\tfrac13z^3$ (up to rotation). Note $\sum|a_k|^2=2$ for $S_3$, a suspiciously clean value worth explaining.
+
+\textbf{Protocol.}
+\begin{enumerate}[leftmargin=*]
+\item MacBook: $n=3,4$, all $q$, 50 starts each.
+\item RunPod CPU pod: $n=5,\dots,8$, all $q$, 500--2000 starts each, in parallel.
+\item For every maximizer record: coefficients (after rotating $a_2>0$), whether they are real, the location of the critical points (zeros of $p'$), the $\theta$ attaining $R(p)=1$, and $J_q(S_n)-M_n(q)$.
+\item Decision point:
+  \begin{itemize}[nosep]
+  \item If some $p$ beats $S_n$ by more than numerical error: you have a counterexample to the natural conjecture. Certify it (Step 6) and write it up --- that is a result.
+  \item If $S_n$ always wins: you have strong evidence; move to proofs.
+  \end{itemize}
+\item Also test majorization numerically: for random $p\in\partial\Pn$, compare decreasing rearrangements of $\log|p(e^{it})|$ and $\log|S_n(e^{it})|$. If majorization holds in all tests, the all-$q$ route of Section 1 is promising.
+\end{enumerate}
+
+%==========================================================
+\section{Step 4: structure and conjectures (ongoing; MacBook + LLM API)}
+
+Use a frontier model through its API as a \emph{generator}: propose lemmas, write code, search literature. Treat every output as unverified.
+\begin{itemize}[nosep]
+\item Candidate lemmas to test: the maximizer has real coefficients after rotation; all critical points of the maximizer lie on $|z|=1$ (true for $S_n$); the maximizer is the same for all $q$; $p\mapsto J_q(p)$ restricted to $\partial\Pn$ has a unique critical point modulo rotation.
+\item Ask why $\sum|a_k|^2=2$ for $S_3$; compute $\sum|a_k|^2$ for $S_n$ in closed form and compare with the maximum found numerically.
+\item Look for a polynomial analogue of circular symmetrization; understand why Baernstein's proof does not directly apply (symmetrization does not preserve the polynomial class).
+\end{itemize}
+
+%==========================================================
+\section{Step 5: rigorous proof of $n=3$, $q=2$ (2--4 weeks)}
+
+\begin{goal}{Goal}
+Prove $\max_{p\in\mathcal P_3}(1+|a_2|^2+|a_3|^2)=2$, attained exactly by rotations of $S_3$ (if Step 3 confirms this).
+\end{goal}
+
+\textbf{Explicit description of $\mathcal P_3$.} With $x=\cos\theta\in(0,1)$, $\frac{\sin2\theta}{\sin\theta}=2x$ and $\frac{\sin3\theta}{\sin\theta}=4x^2-1$, so
+\[
+D_\theta(z)=1+b(x)z+c(x)z^2,\qquad b(x)=2a_2x,\quad c(x)=a_3(4x^2-1).
+\]
+$D_\theta$ has no zeros in $|z|<1$ iff the reversed quadratic $z^2+b z+c$ has both zeros in the closed disc. The Schur--Cohn test for the \emph{open} disc reads
+\[
+|c|<1\quad\text{and}\quad|b-\bar b\,c|<1-|c|^2 .
+\]
+So, up to boundary cases, $\mathcal P_3$ is a semialgebraic set in $(a_2,a_3)\in\C^2$ described by these inequalities for all $x\in(0,1)$. (A numerical cross-check of this description against the Dieudonné radius is reported in the appendix.)
+
+\begin{pitfall}
+The closed-disc version is \emph{not} just ``replace $<$ by $\le$'': when $|c|=1$ both roots must lie on the circle, which forces $b=\bar b c$ \emph{and} $|b|\le2$. This degenerate case occurs exactly at the candidate: as $x\to1$, $|c|\to3|a_3|$, and $S_3$ has $a_3=\tfrac13$. Handle it by hand.
+\end{pitfall}
+
+\textbf{Two independent routes; do both.}
+\begin{enumerate}[leftmargin=*]
+\item \emph{Exact (preferred).} Eliminate $x$ (the condition must hold for all $x\in(0,1)$, i.e.\ a quantifier) with a computer-algebra system: cylindrical algebraic decomposition or resultants in SageMath/Mathematica on the MacBook. Then maximize $|a_2|^2+|a_3|^2$ on the resulting region by Lagrange multipliers. Rotation lets you take $a_2\ge0$, leaving 3 real variables.
+\item \emph{Certified branch-and-bound.} A priori box: $0\le a_2\le2$ (Bieberbach) and $|a_3|\le\tfrac13$ (Lemma~\ref{lem:an}). For each box, either certify it lies outside $\mathcal P_3$ (some $x$ violates the inequalities for every point of the box, via Arb intervals), or certify $1+|a_2|^2+|a_3|^2\le 2-\delta$ on it. Boxes touching the candidate cannot be closed numerically; use a local second-order argument along $\partial\mathcal P_3$ there. Run on the MacBook first; move to a RunPod CPU pod if the box count explodes.
+\end{enumerate}
+
+%==========================================================
+\section{Step 6: $n=3$ for all $q$, and certifying counterexamples}
+
+\begin{itemize}[leftmargin=*]
+\item \emph{All $q$ via majorization:} try to prove that $\log|S_3(e^{it})|$ majorizes $\log|p(e^{it})|$ for all $p\in\mathcal P_3$. Numerically test first (Step 3); a proof would give all $q$ simultaneously.
+\item \emph{Direct, $q$ in compact ranges:} branch-and-bound in $(a_2,\Re a_3,\Im a_3,q)$ with rigorous enclosures of $J_q$ (Arb; trapezoid rule with a proven error bound using analyticity of $|p|^q$ in a strip, Lemma~\ref{lem:smooth}). Treat $q\to0$ and $q\to\infty$ separately.
+\item \emph{Certifying a counterexample} (if Step 3 finds one): give exact (rational/algebraic) coefficients; prove univalence via a certified Dieudonné check (interval roots bounded away from $\D$, or explicit Schur--Cohn inequalities); compute $J_q$ for both polynomials with rigorous error bounds.
+\end{itemize}
+
+%==========================================================
+\section{Step 7: general $n$ (research-level)}
+\begin{itemize}[nosep]
+\item $q=2$: for real coefficients, univalence relates to nonnegativity of cosine polynomials (Fejér kernels; see Dimitrov et al.). Try to formulate $\max\sum a_k^2$ as an optimization over nonnegative trigonometric polynomials (a semidefinite program) and compare with $S_n$.
+\item All $q$: a polynomial analogue of the star-function/majorization argument.
+\end{itemize}
+
+%==========================================================
+\section{Step 8: verification and write-up}
+\begin{enumerate}[nosep]
+\item Re-run all certificates from a clean checkout on a different machine (RunPod vs MacBook) and archive outputs with hashes.
+\item Formalize the small lemmas (Lemmas~\ref{lem:exist}--\ref{lem:an}) in Lean if Mathlib supports them; mainly an error check.
+\item Have a faculty member (e.g.\ your complex analysis instructor) check the argument before posting.
+\item Write the paper yourself; state precisely what is proved, what is numerical, and how AI tools were used.
+\end{enumerate}
+
+%==========================================================
+\section*{Timeline at a glance}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Step & Duration & Hardware \\ \midrule
+0 Literature & 2--4 days & MacBook \\
+1 Environment & 1 day & MacBook, RunPod setup \\
+2 Toolkit & 2--3 days & MacBook \\
+3 Exploration & 1--2 weeks & MacBook ($n\le4$), RunPod CPU ($n\ge5$) \\
+4 Structure & ongoing & MacBook + LLM API \\
+5 $n=3$, $q=2$ proof & 2--4 weeks & MacBook (CAS, Arb), RunPod if needed \\
+6 $n=3$, all $q$ & open-ended & MacBook + RunPod CPU \\
+7 General $n$ & research & --- \\ \bottomrule
+\end{tabular}
+\end{center}
+
+\appendix
+\section{Numerical cross-check of the $\mathcal P_3$ description}
+\input{crosscheck.tex}
+
+\end{document}
