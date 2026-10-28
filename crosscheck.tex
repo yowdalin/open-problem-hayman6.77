@@ -1,0 +1,8 @@
+Script: \texttt{crosscheck\_p3.py} (delivered). For 3{,}000 random pairs $(a_2,a_3)$ with $|a_2|\le1.2$, $|a_3|\le0.4$, we compared
+(A) the Schur--Cohn conditions of Step~5 on a grid of 3{,}000 values of $x\in(0,1)$ with
+(B) the Dieudonné radius test $R(p)>1$ on a grid of 3{,}000 values of $\theta$.
+Points with $|R-1|<10^{-3}$ (4 of them) were skipped, since there grid error and the open/closed distinction matter.
+
+\textbf{Result (numerical):} 2{,}996 agreements, 0 disagreements; 192 of the compared points were univalent and 2{,}804 were not. Also $R(z+\tfrac12z^2)=1$ and $R(S_3)=1$ to $10^{-12}$.
+
+This supports the explicit description of $\mathcal P_3$ away from its boundary. It does \emph{not} check the boundary itself, which is exactly where the extremal lives (see the pitfall box in Step~5).
