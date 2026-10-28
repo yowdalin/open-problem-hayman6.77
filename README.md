@@ -1,4 +1,4 @@
-# Hayman–Lingham Problem 6.77: integral means of univalent polynomials
+# F.Holland: Univalent polynomial problem (Hayman #6.77)
 
 Let $\mathcal P_n$ be the polynomials $p(z) = z + a_2 z^2 + \dots + a_n z^n$ that are univalent in the unit disc. The problem asks for
 
