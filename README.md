@@ -1,10 +1,11 @@
-# F. Holland: Univalent polynomial problem (Hayman #6.77)
+# Univalent polynomial problem (Hayman #6.77)
 
 Let $\mathcal P_n$ be the polynomials $p(z) = z + a_2 z^2 + \dots + a_n z^n$ that are univalent in the unit disc. The problem asks for
 
 $$M_n(q) = \max_{p \in \mathcal P_n} \int_0^{2\pi} |p(e^{it})|^q \, dt, \qquad 0 < q < \infty .$$
 
 The natural candidates are the Suffridge polynomials. I attempt both computational and theoretical attacks, starting with the case $n = 3$.
+This problem was first proposed by F. Holland in 1973 and added to W. Hayman's collection of unsolved problems, "Research Problems in Complex Analysis" as problem #6.77. It remains unsolved, and no progress has been made since its' first statement.
 
 ## Contents
 
